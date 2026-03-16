@@ -1,0 +1,14 @@
+# .Net build output
+bin/
+obj/
+
+# Visual Studio Code settings
+.vscode/       
+
+# secrets and connection strings
+appsettings.Development.json
+*.env
+
+#docker volumes
+.docker/
+
