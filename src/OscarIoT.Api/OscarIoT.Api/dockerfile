@@ -1,0 +1,32 @@
+# Stage 1: BUILD
+# We use the .NET SDK image - it has the compiler and build tools 
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+
+# Set the working directory in the container to /app
+WORKDIR /app
+
+# Copy the project file and restore dependencies
+# Docker caches each instruction. If .csproj hasn't changed
+# it won't re-run 'dotnet restore' - makes builds faster 
+COPY *.csproj ./
+RUN dotnet restore
+
+#copy all source files 
+COPY . .
+
+# Build the app in Release mode (optimised for production)
+RUN dotnet publish -c Release -o /app/publish
+
+# Stage 2: RUNTIME
+# Switcher to the smaller runtime image - no compiler , just whats needed to RUN
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 
+WORKDIR /app
+
+# Copy only the published output from the build stage
+COPY --from=build /app/publish .
+
+# Tell Docker this container listens to port 8080
+EXPOSE 8080
+
+# The command to run when the container starts - runs the app
+ENTRYPOINT ["dotnet", "OscarIoT.Api.dll"]
