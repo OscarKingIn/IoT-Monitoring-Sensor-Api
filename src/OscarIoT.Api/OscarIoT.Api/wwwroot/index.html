@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Oscar IoT — Sensor Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;700;900&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet" />
+<style>
+
+
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+        --bg:#0a0d12;--bg2:#0f1318;--bg3:#141920;--panel:#111620;
+        --border:#1e2d3d;--accent:#00c8ff;--green:#00e5a0;--green2:#00b07a;
+        --orange:#ff8c00;--red:#ff3b5c;--text:#c8d8e8;--text2:#7a9ab8;--text3:#445566;
+        --mono:'Share Tech Mono',monospace;--sans:'Barlow',sans-serif;--cond:'Barlow Condensed',sans-serif;
+    }
+
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+    body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,200,255,.015) 2px,rgba(0,200,255,.015) 4px)}
+
+    header{display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:64px;
+    background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+    .logo{display:flex;align-items:center;gap:1rem}
+    .logo-mark{width:36px;height:36px;border:2px solid var(--accent);
+
+    clip-path:polygon(10% 0%,90% 0%,100% 10%,100% 90%,90% 100%,10% 100%,0% 90%,0% 10%);
+    background:rgba(0,200,255,.08);position:relative}
+    .logo-mark::before{content:'';position:absolute;inset:3px;background:var(--accent);
+
+    clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);opacity:.7}
+    .logo-text{font-family:var(--cond);font-weight:900;font-size:1.4rem;letter-spacing:.12em;color:#fff;text-transform:uppercase}
+    .logo-text span{color:var(--accent)}
+    .hdr-mid{font-family:var(--mono);font-size:.72rem;color:var(--text2);letter-spacing:.06em;text-align:center}
+    .hdr-mid strong{display:block;font-size:.65rem;margin-top:2px}
+    .live-badge{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.7rem;
+    letter-spacing:.1em;color:var(--green);text-transform:uppercase}
+
+    .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);
+    animation:pulse 2s ease-in-out infinite;box-shadow:0 0 6px var(--green)}
+
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+    .api-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:.4rem}
+    .api-dot.on{background:var(--green);box-shadow:0 0 4px var(--green)}
+    .api-dot.off{background:var(--orange);box-shadow:0 0 4px var(--orange)}
+    .layout{display:grid;grid-template-columns:240px 1fr;grid-template-rows:auto 1fr;min-height:calc(100vh - 64px)}
+
+    aside{grid-row:1/3;background:var(--bg2);border-right:1px solid var(--border);padding:1.25rem 0}
+    .sb-sec{padding:0 1.25rem 1.25rem;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+    .sb-lbl{font-family:var(--mono);font-size:.62rem;letter-spacing:.15em;color:var(--text3);text-transform:uppercase;margin-bottom:.75rem}
+    .sensor-item{display:flex;align-items:center;gap:.75rem;padding:.55rem .75rem;border-radius:4px;
+
+    border:1px solid transparent;margin-bottom:.25rem}
+
+    .si{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .si.ok{background:var(--green);box-shadow:0 0 5px var(--green)}
+    .si.warn{background:var(--orange);box-shadow:0 0 5px var(--orange)}
+    .si.alert{background:var(--red);box-shadow:0 0 5px var(--red);animation:pulse 1s infinite}
+    .s-info{flex:1;min-width:0}
+    .s-id{font-family:var(--mono);font-size:.7rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .s-type{font-size:.63rem;color:var(--text3);margin-top:1px}
+    .s-val{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-align:right;flex-shrink:0}
+    .stats-bar{grid-column:2;padding:1.25rem 2rem;border-bottom:1px solid var(--border);
+
+    display:flex;gap:1.5rem;background:var(--bg2)}
+    .stat{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:4px;
+
+    padding:1rem 1.25rem;position:relative;overflow:hidden}
+    .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+    .stat.blue::before{background:var(--accent)}.stat.green::before{background:var(--green)}
+    .stat.orange::before{background:var(--orange)}.stat.red::before{background:var(--red)}
+    .stat-lbl{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;color:var(--text3);text-transform:uppercase;margin-bottom:.4rem}
+    .stat-val{font-family:var(--cond);font-size:2.2rem;font-weight:900;line-height:1;margin-bottom:.2rem}
+    .stat.blue .stat-val{color:var(--accent)}.stat.green .stat-val{color:var(--green)}
+    .stat.orange .stat-val{color:var(--orange)}.stat.red .stat-val{color:var(--red)}
+    .stat-sub{font-size:.7rem;color:var(--text2)}
+    main{grid-column:2;padding:2rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-content:start}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+    .ph{padding:.85rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;
+
+
+    justify-content:space-between;background:var(--bg3)}
+    .pt{font-family:var(--cond);font-weight:700;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase}
+    .pb2{font-family:var(--mono);font-size:.6rem;padding:.15rem .5rem;border-radius:2px;letter-spacing:.08em;text-transform:uppercase}
+    .bb{background:rgba(0,200,255,.12);color:var(--accent);border:1px solid rgba(0,200,255,.3)}
+    .bg{background:rgba(0,229,160,.12);color:var(--green);border:1px solid rgba(0,229,160,.3)}
+    .chart-wrap{grid-column:1/3}.cc{padding:1.25rem;height:200px}
+    canvas{width:100%!important;height:100%!important}
+    .table-wrap{grid-column:1/3}
+    table{width:100%;border-collapse:collapse;font-size:.8rem}
+    thead tr{background:var(--bg3)}
+    th{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;
+
+    color:var(--text3);padding:.65rem 1rem;text-align:left;border-bottom:1px solid var(--border);font-weight:400}
+    td{padding:.7rem 1rem;border-bottom:1px solid var(--border);font-size:.78rem;color:var(--text)}
+    tbody tr:last-child td{border-bottom:none}
+    .tc-id{font-family:var(--mono);color:var(--accent)!important;font-size:.72rem}
+    .tc-val{font-family:var(--mono);font-weight:700}
+    .tc-ts{font-family:var(--mono);font-size:.65rem;color:var(--text3)!important}
+    .pill{display:inline-flex;align-items:center;font-family:var(--mono);font-size:.6rem;
+
+    letter-spacing:.06em;padding:.18rem .5rem;border-radius:2px;text-transform:uppercase}
+    .pill.ok{background:rgba(0,229,160,.1);color:var(--green);border:1px solid rgba(0,229,160,.25)}
+    .pill.warn{background:rgba(255,140,0,.1);color:var(--orange);border:1px solid rgba(255,140,0,.25)}
+    .pill.alert{background:rgba(255,59,92,.1);color:var(--red);border:1px solid rgba(255,59,92,.25)}
+    .new-row{animation:flash .5s ease-out}
+
+    @keyframes flash{from{background:rgba(0,200,255,.1)}to{background:transparent}}
+    .gg{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+    .gc{background:var(--panel);padding:1.25rem;display:flex;flex-direction:column;align-items:center;gap:.75rem}
+    .g-lbl{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;color:var(--text3);text-transform:uppercase}
+    .g-wrap{position:relative;width:120px;height:70px}
+    .g-wrap svg{width:120px;height:70px}
+    .g-num{position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+
+    font-family:var(--cond);font-weight:900;font-size:1.6rem;line-height:1;text-align:center}
+    .g-unit{font-family:var(--mono);font-size:.65rem;color:var(--text2);margin-top:-.2rem}
+    .post-form{padding:1.25rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem}
+    .fg{display:flex;flex-direction:column;gap:.3rem}
+    .fl{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;color:var(--text3);text-transform:uppercase}
+    .fi{background:var(--bg3);border:1px solid var(--border);color:var(--text);
+
+    font-family:var(--mono);font-size:.75rem;padding:.45rem .65rem;border-radius:3px;outline:none}
+    .fi:focus{border-color:var(--green2)}
+    .fs{grid-column:1/4;background:rgba(0,229,160,.1);border:1px solid var(--green2);color:var(--green);
+
+    font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;padding:.6rem;border-radius:3px;cursor:pointer;text-transform:uppercase}
+    .fs:hover{background:rgba(0,229,160,.2)}
+    .log-wrap{grid-column:1/3}
+    .log-body{padding:.75rem 1rem;max-height:140px;overflow-y:auto;font-family:var(--mono);font-size:.68rem;line-height:1.8}
+    .le{display:flex;gap:1rem}
+    .lts{color:var(--text3);flex-shrink:0;width:80px}
+    .lm.info{color:var(--accent)}.lm.ok{color:var(--green)}.lm.warn{color:var(--orange)}
+    .lm.err{color:var(--red)}.lm.dim{color:var(--text2)}
+    #toast{position:fixed;bottom:2rem;right:2rem;background:var(--bg2);border:1px solid var(--green2);
+
+    color:var(--green);font-family:var(--mono);font-size:.72rem;padding:.75rem 1.25rem;border-radius:4px;
+    box-shadow:0 4px 20px rgba(0,0,0,.5);opacity:0;transform:translateY(10px);transition:all .25s;
+    pointer-events:none;z-index:1000;letter-spacing:.06em}
+
+    #toast.show{opacity:1;transform:translateY(0)}  
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-thumb{background:#243040;border-radius:3px}
+
+</style>
+</head>
+
+<body>
+<header>
+    <div class="logo"><div class="logo-mark"></div><div class="logo-text">Oscar<span>SM</span></div></div>
+    <div class="hdr-mid">IoT SENSOR MONITORING PLATFORM
+        <strong id="hdrStatus" style="color:var(--orange)">● Connecting to API...</strong></div>
+        <div style="display:flex;align-items:center;gap:1.5rem">
+        <span style="font-family:var(--mono);font-size:.65rem;color:var(--text3)">
+        <span class="api-dot off" id="apiDot"></span><span id="apiTxt">Connecting</span></span>
+        <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    </div>
+</header>
+
+<div class="layout">
+    <aside>
+        <div class="sb-sec"><div class="sb-lbl">Active Sensors</div><div id="sensorList"></div></div>
+        <div class="sb-sec" style="border-bottom:none">
+          <div class="sb-lbl">Stack</div>
+           <div style="font-family:var(--mono);font-size:.65rem;color:var(--text2);line-height:2.2">
+            <div>&#9632; <span style="color:var(--accent)">ASP.NET Core 8 (C#)</span></div>
+            <div>&#9632; <span style="color:var(--accent)">Entity Framework Core</span></div>
+            <div>&#9632; <span style="color:var(--accent)">SQL Server</span></div>
+            <div>&#9632; <span style="color:var(--accent)">Docker + Compose</span></div>
+            <div>&#9632; <span style="color:var(--accent)">Azure App Service</span></div>
+            <div>&#9632; <span style="color:var(--accent)">GitHub Actions CI/CD</span></div>
+            <div>&#9632; <span style="color:var(--green)">xUnit + Moq Tests</span></div>
+          </div>
+        </div>
+    </aside>
+
+    <div class="stats-bar">
+        <div class="stat blue"><div class="stat-lbl">Total Readings</div><div class="stat-val" id="sTotal">—</div><div class="stat-sub">in SQL Server</div></div>
+        <div class="stat green"><div class="stat-lbl">Active Sensors</div><div class="stat-val" id="sSensors">—</div><div class="stat-sub">unique IDs</div></div>
+        <div class="stat orange"><div class="stat-lbl">Warnings</div><div class="stat-val" id="sWarn">—</div><div class="stat-sub">over threshold</div></div>
+        <div class="stat red"><div class="stat-lbl">Alerts</div><div class="stat-val" id="sAlert">—</div><div class="stat-sub">need attention</div></div>
+    </div>
+
+<main>
+    <div class="panel chart-wrap"><div class="ph"><span class="pt">Live Reading Stream</span><span class="pb2 bb" id="chartLbl">ALL SENSORS</span></div><div class="cc"><canvas id="myChart"></canvas></div></div>
+    <div class="panel"><div class="ph"><span class="pt">Latest Values</span><span class="pb2 bg">REAL-TIME</span></div><div class="gg" id="gaugeGrid"></div></div>
+    <div class="panel"><div class="ph"><span class="pt">POST New Reading</span><span class="pb2 bg">REST API</span></div>
+        <form class="post-form" onsubmit="doPost(event)">
+        <div class="fg"><label class="fl">Sensor ID</label><input class="fi" id="fId" value="WTR-BNE-001" required></div>
+        <div class="fg"><label class="fl">Type</label><input class="fi" id="fType" value="water-flow" required></div>
+        <div class="fg"><label class="fl">Value</label><input class="fi" id="fVal" type="number" step=".01" value="42.7" required></div>
+        <div class="fg"><label class="fl">Unit</label><input class="fi" id="fUnit" value="L/s" required></div>
+        <div class="fg"><label class="fl">Location</label><input class="fi" id="fLoc" value="Mowbray" required></div>
+        <div class="fg" style="align-self:end"><button type="submit" class="fs">POST to /api/v1/sensorReadings</button></div>
+        </form>
+    </div>
+
+    <div class="panel table-wrap"><div class="ph"><span class="pt">Readings from Database</span><span class="pb2 bb" id="tblCount">0 records</span></div>
+        <div style="overflow:auto;max-height:300px">
+         <table><thead><tr><th>ID</th><th>Sensor ID</th><th>Type</th><th>Value</th><th>Unit</th><th>Location</th><th>Timestamp</th><th>Status</th></tr></thead>
+         <tbody id="tBody"><tr><td colspan="8" style="text-align:center;color:var(--text3);font-family:var(--mono);padding:2rem">Connecting...</td></tr></tbody></table>
+        </div>
+    </div>
+
+    <div class="panel log-wrap"><div class="ph"><span class="pt">Activity Log</span><span class="pb2 bb">SYSTEM</span></div><div class="log-body" id="logBody"></div></div>
+</main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+
+    const API = '/api/v1/sensorReadings'; // relative URL — works on localhost AND Azure
+
+    const THRESH = {
+        'WTR-BNE-001':{ warn:70, alert:78 },
+        'WTR-BNE-002':{ warn:100, alert:115 },
+        'RLW-QLD-001':{ warn:45, alert:52 },
+        'AGR-NSW-001':{ warn:22, alert:28 },
+        'MIN-WA-001' :{ warn:48, alert:57 },
+    };
+
+// Application state — all in memory
+    const S = { readings:[], sensors:{}, chart:null, pollId:null };
+
+
+    function norm(r){
+    return {
+        id: r.id?? r.Id,
+        sensorId: r.sensorId?? r.SensorId,
+        sensorType:r.sensorType?? r.SensorType,
+        value: r.value ?? r.Value,
+        unit: r.unit ?? r.Unit,
+        location: r.location ?? r.Location,
+        timestamp: r.timestamp ?? r.Timestamp,
+        };
+    }
+
+// ── FETCH ALL READINGS FROM YOUR API ────────────────────────────────────────
+// Calls: GET /api/v1/sensorReadings
+// Handled by: SensorReadingsController.GetAll()
+// Returns: JSON array of SensorReading objects from SQL Server
+
+    async function loadReadings(){
+        try {
+            const res = await fetch(API, { signal: AbortSignal.timeout(8000) });
+        if(!res.ok) throw new Error('HTTP '+res.status);
+            const data = (await res.json()).map(norm);
+            S.readings = data;
+            S.sensors = {};
+            data.forEach(r => {
+            S.sensors[r.sensorId] = { lastValue:r.value, unit:r.unit, type:r.sensorType, location:r.location };
+        });
+            setStatus(true);
+            log('Loaded '+data.length+' readings from database','ok');
+        return data;
+        } catch(e){
+            setStatus(false);
+            log('GET '+API+' failed: '+e.message,'err');
+            throw e;
+        }
+    }
+
+// ── POST A NEW READING TO YOUR API ──────────────────────────────────────────
+// Calls: POST /api/v1/sensorReadings
+// Handled by: SensorReadingsController.Create()
+// Body: CreateSensorReadingDto (matches your C# DTO exactly)
+// Returns: 201 Created with the saved SensorReading
+
+    async function doPost(e){
+        e.preventDefault();
+    const body = {
+        sensorId: document.getElementById('fId').value.trim(),
+        sensorType:document.getElementById('fType').value.trim(),
+        value: parseFloat(document.getElementById('fVal').value),
+        unit: document.getElementById('fUnit').value.trim(),
+        location: document.getElementById('fLoc').value.trim(),
+    };
+        log('POST → '+body.sensorId+': '+body.value+' '+body.unit,'info');
+    try {
+        const res = await fetch(API,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(body),
+        signal:AbortSignal.timeout(8000)    
+    });
+    if(!res.ok){ const t=await res.text(); throw new Error('HTTP '+res.status+' '+t); }
+        const created = norm(await res.json());
+        S.readings.push(created);
+        S.sensors[created.sensorId]={lastValue:created.value,unit:created.unit,type:created.sensorType,location:created.location};
+        log('201 Created — ID '+created.id+' saved to SQL Server','ok');
+        toast('Reading saved — ID '+created.id);
+        refreshUI();
+    } catch(e){
+        log('POST failed: '+e.message,'err');
+        toast(e.message,'--red');
+        }
+    }
+
+// ── STATUS UI ────────────────────────────────────────────────────────────────
+
+        function setStatus(ok){
+            document.getElementById('apiDot').className='api-dot '+(ok?'on':'off');
+            document.getElementById('apiTxt').textContent=ok?'API: LIVE':'API: OFFLINE';
+            const h=document.getElementById('hdrStatus');
+            h.style.color=ok?'var(--green)':'var(--red)';
+            h.textContent=ok?'● CONNECTED — ASP.NET Core + SQL Server':'● OFFLINE — run: docker-compose up';
+        }
+
+// ── LOG ──────────────────────────────────────────────────────────────────────
+
+        function log(msg,type='dim'){
+        const b=document.getElementById('logBody');
+        const d=document.createElement('div'); d.className='le';
+        d.innerHTML='<span class="lts">'+new Date().toLocaleTimeString()+'</span><span class="lm '+type+'">'+msg+'</span>';
+        b.prepend(d); while(b.children.length>60) b.removeChild(b.lastChild);
+    }
+
+// ── TOAST ────────────────────────────────────────────────────────────────────
+
+        function toast(msg,c='--green'){
+        const t=document.getElementById('toast');
+        t.textContent=msg; t.style.borderColor='var('+c+')'; t.style.color='var('+c+')';
+        t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);
+    }
+
+// ── STATS ────────────────────────────────────────────────────────────────────
+
+        function updateStats(){
+        let warn=0,alert=0; const ids=new Set();
+        S.readings.forEach(r=>{ ids.add(r.sensorId); const t=THRESH[r.sensorId];
+        if(t){ if(r.value>=t.alert)alert++; else if(r.value>=t.warn)warn++; }});
+        document.getElementById('sTotal').textContent=S.readings.length;
+        document.getElementById('sSensors').textContent=ids.size;
+        document.getElementById('sWarn').textContent=warn;
+        document.getElementById('sAlert').textContent=alert;
+    }
+
+// ── SENSOR SIDEBAR ───────────────────────────────────────────────────────────
+
+        function buildSidebar(){
+        const el=document.getElementById('sensorList');
+        const ids=Object.keys(S.sensors);
+        if(!ids.length){ el.innerHTML='<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3)">No sensors yet</div>'; return; }
+        el.innerHTML='';
+        ids.forEach(id=>{
+        const s=S.sensors[id]; const t=THRESH[id];
+        const status=!t?'ok':s.lastValue>=t.alert?'alert':s.lastValue>=t.warn?'warn':'ok';
+        const d=document.createElement('div'); d.className='sensor-item';
+        d.innerHTML='<div class="si '+status+'"></div><div class="s-info"><div class="s-id">'+id+'</div><div class="s-type">'+s.type+'</div></div><div class="s-val">'+s.lastValue.toFixed(1)+' '+s.unit+'</div>';
+        el.appendChild(d);
+     });
+    }
+
+// ── TABLE ────────────────────────────────────────────────────────────────────
+
+        function buildTable(){
+        const tbody=document.getElementById('tBody');
+        const rows=[...S.readings].reverse().slice(0,60);
+        if(!rows.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3);font-family:var(--mono);padding:2rem">No readings yet. POST one above!</td></tr>'; document.getElementById('tblCount').textContent='0 records'; return; }
+        tbody.innerHTML='';
+        rows.forEach((r,i)=>{
+        const t=THRESH[r.sensorId];
+        const st=!t?'ok':r.value>=t.alert?'alert':r.value>=t.warn?'warn':'ok';
+        const lbl=st==='alert'?'● ALERT':st==='warn'?'▲ WARN':'✓ OK';
+        const tr=document.createElement('tr'); if(i===0)tr.classList.add('new-row');
+        tr.innerHTML='<td style="color:var(--text3);font-family:var(--mono);font-size:.65rem">'+r.id+'</td>'+
+        '<td class="tc-id">'+r.sensorId+'</td>'+
+        '<td style="color:var(--text2)">'+r.sensorType+'</td>'+
+        '<td class="tc-val">'+Number(r.value).toFixed(2)+'</td>'+
+        '<td style="color:var(--text2);font-family:var(--mono);font-size:.72rem">'+r.unit+'</td>'+
+        '<td style="color:var(--text2);font-size:.72rem">'+r.location+'</td>'+
+        '<td class="tc-ts">'+new Date(r.timestamp).toLocaleString()+'</td>'+
+        '<td><span class="pill '+st+'">'+lbl+'</span></td>';
+        tbody.appendChild(tr);
+    });
+        document.getElementById('tblCount').textContent=S.readings.length+' records';
+    }
+
+// ── GAUGES ───────────────────────────────────────────────────────────────────
+
+        function buildGauges(){
+        const g=document.getElementById('gaugeGrid'); g.innerHTML='';
+        const ids=Object.keys(S.sensors).slice(0,4);
+        if(!ids.length){ g.innerHTML='<div style="grid-column:1/3;padding:2rem;text-align:center;font-family:var(--mono);font-size:.7rem;color:var(--text3)">POST a reading to see gauges</div>'; return; }
+        ids.forEach((id,di)=>{
+        const info=S.sensors[id]; const v=info.lastValue;
+        const t=THRESH[id]; const color=!t?'#00e5a0':v>=t.alert?'#ff3b5c':v>=t.warn?'#ff8c00':'#00e5a0';
+        const vals=S.readings.filter(r=>r.sensorId===id).map(r=>r.value);
+        const mn=Math.min(...vals)*.9; const mx=Math.max(...vals)*1.1||v*1.5||100;
+        const pct=Math.min(1,Math.max(0,(v-mn)/(mx-mn))); const ang=pct*180;
+        const toR=a=>(a-180)*Math.PI/180;
+        const x2=60+52*Math.cos(toR(ang)); const y2=65+52*Math.sin(toR(ang));
+        const cell=document.createElement('div'); cell.className='gc';
+        cell.innerHTML='<span class="g-lbl">'+id+'</span>'+
+        '<div class="g-wrap"><svg viewBox="0 0 120 70">'+
+        '<path d="M8,65 A52,52 0 0,1 112,65" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="8" stroke-linecap="round"/>'+
+        '<path d="M8,65 A52,52 0 0,1 '+x2.toFixed(1)+','+y2.toFixed(1)+'" fill="none" stroke="'+color+'" stroke-width="8" stroke-linecap="round" style="filter:drop-shadow(0 0 3px '+color+'88)"/>'+
+        '</svg><div class="g-num" style="color:'+color+'">'+v.toFixed(1)+'</div></div>'+
+        '<span class="g-unit">'+info.unit+' · '+info.type+'</span>';
+        g.appendChild(cell);
+    });
+  }
+
+// ── CHART ────────────────────────────────────────────────────────────────────
+
+        function initChart(){ S.chart={ canvas:document.getElementById('myChart'), labels:[], sets:{}, max:40 }; S.chart.ctx=S.chart.canvas.getContext('2d'); }
+        function updateChartData(){
+            const sorted=[...S.readings].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+                S.chart.labels=[]; S.chart.sets={};
+                sorted.slice(-S.chart.max).forEach(r=>{
+
+            const ts=new Date(r.timestamp).toLocaleTimeString();
+                if(!S.chart.labels.includes(ts)) S.chart.labels.push(ts);
+                if(!S.chart.sets[r.sensorId]) S.chart.sets[r.sensorId]=[];
+                    S.chart.sets[r.sensorId].push(r.value);
+            }); 
+        }
+
+        const COLS=['#00c8ff','#00e5a0','#ffd600','#ff8c00','#ff3b5c','#c084fc'];
+            function drawChart(){
+                const{ctx,canvas,labels,sets}=S.chart;
+                const W=canvas.offsetWidth,H=canvas.offsetHeight;
+                canvas.width=W; canvas.height=H;
+                const P={t:20,r:20,b:30,l:48};
+                const cW=W-P.l-P.r,cH=H-P.t-P.b,n=labels.length;
+            if(n<2)return;
+                ctx.clearRect(0,0,W,H);
+                ctx.strokeStyle='rgba(30,45,61,.8)'; ctx.lineWidth=1;
+            for(let i=0;i<=4;i++){ const y=P.t+(cH/4)*i; ctx.beginPath(); ctx.moveTo(P.l,y); ctx.lineTo(W-P.r,y); ctx.stroke(); }
+                const all=Object.values(sets).flat();
+                const vMin=all.length?Math.min(...all)*.88:0,vMax=all.length?Math.max(...all)*1.12:100,vR=vMax-vMin||1;
+                ctx.font='10px Share Tech Mono,monospace'; ctx.fillStyle='rgba(68,85,102,.9)'; ctx.textAlign='right';
+            for(let i=0;i<=4;i++){ const y=P.t+(cH/4)*i; ctx.fillText((vMax-(vR/4)*i).toFixed(1),P.l-5,y+4); }
+                ctx.textAlign='center'; const step=Math.ceil(n/6);
+                labels.forEach((l,i)=>{ if(i%step!==0)return; ctx.fillText(l.slice(-5),P.l+(i/(n-1))*cW,H-6); });
+                Object.entries(sets).forEach(([id,data],di)=>{
+            if(data.length<2)return;
+                const col=COLS[di%COLS.length];
+                const pts=data.map((v,i)=>({x:P.l+(i/(n-1))*cW,y:P.t+cH-((v-vMin)/vR)*cH}));
+                ctx.beginPath(); ctx.moveTo(pts[0].x,P.t+cH);
+                pts.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.lineTo(pts[pts.length-1].x,P.t+cH); ctx.closePath();
+                const gr=ctx.createLinearGradient(0,P.t,0,P.t+cH); gr.addColorStop(0,col+'22'); gr.addColorStop(1,col+'00');
+                ctx.fillStyle=gr; ctx.fill();
+                ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.lineJoin='round';
+                pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y)); ctx.stroke();
+                const lp=pts[pts.length-1]; ctx.beginPath(); ctx.arc(lp.x,lp.y,3.5,0,Math.PI*2); ctx.fillStyle=col; ctx.fill();
+        });
+    }
+
+// ── REFRESH ALL UI ───────────────────────────────────────────────────────────
+
+        function refreshUI(){ updateStats(); buildSidebar(); buildGauges(); buildTable(); updateChartData(); drawChart(); }
+
+
+// ── POLL EVERY 10 SECONDS ────────────────────────────────────────────────────
+// Every 10 seconds: call GET /api/v1/sensorReadings again.
+// If there are new readings in the database, the dashboard updates automatically.
+// This simulates a live monitoring dashboard — no page refresh needed.
+
+        function startPolling(){
+            S.pollId=setInterval(async()=>{
+            const prev=S.readings.length;
+        try{ await loadReadings(); refreshUI();
+            if(S.readings.length>prev) log((S.readings.length-prev)+' new reading(s) from DB','ok');
+        }catch(_){}
+            },10000);
+    }
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+
+        document.addEventListener('DOMContentLoaded',async()=>{
+            initChart();
+            log('Dashboard initialised — connecting to ASP.NET Core API...','info');
+        try{
+            await loadReadings();
+                refreshUI();
+                toast('Connected to your API!');
+                log('Polling every 10 seconds for new readings','dim');
+                startPolling();
+        }catch(e){
+            log('Cannot reach API. Make sure docker-compose up is running.','warn');
+            log('Expected: http://localhost:8080/api/v1/sensorReadings','warn');
+            toast('API offline — run docker-compose up','--orange');
+            refreshUI();
+        }
+        window.addEventListener('resize',drawChart);
+    });
+
+</script>
+</body>
+</html>

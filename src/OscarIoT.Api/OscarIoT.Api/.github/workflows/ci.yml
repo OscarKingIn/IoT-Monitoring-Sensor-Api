@@ -1,0 +1,57 @@
+# GitHub Actions CI/CD Pipelines for OscarIoT
+
+name: Build, Test & Deploy 
+
+# TRIGGER: this pipeline runs on every push to main or develop, and on every Pull Request targeting those branches
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+
+# ----JOB 1: BUILD AND TEST ----
+
+  build-and-test: 
+    runs-on: ubuntu-latest 
+
+
+    steps:
+      # Step 1: Get the code
+
+      - name: Checkout code
+        uses: actions/checkout@4
+
+      # Step 2: Install .NET
+
+      - name: Setup .NET 1O
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x' 
+
+      #  Step 3: Restore Packages
+      - name: Restore dependencies
+        run: dotnet restore 
+
+      #  Step 4: Build
+      - name: Build 
+        run: dotnet build --no-restore --configuration Release 
+
+      #  Step 5: Run Tests
+      - name: Run tests
+        run: dotnet tests --no-build --verbosity normal
+
+
+# ----JOB 2: BUILD DOCKER IMAGE ----
+  docker-build-and-test:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps: 
+      - uses: actions/checkout@v4
+
+
+      - name: Build Docker image
+        run: docker build -t oscar-iot:${{ github.sha }} .

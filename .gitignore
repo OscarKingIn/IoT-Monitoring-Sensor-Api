@@ -1,6 +1,8 @@
 # .Net build output
 bin/
 obj/
+publish/
+*.zip
 
 # Visual Studio Code settings
 .vscode/       
