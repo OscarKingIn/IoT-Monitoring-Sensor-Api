@@ -1,6 +1,12 @@
 # .Net build output
 bin/
 obj/
+bin/
+obj/
+publish/
+*.dll
+*.exe
+*.zip
 
 # Visual Studio Code settings
 .vscode/       
