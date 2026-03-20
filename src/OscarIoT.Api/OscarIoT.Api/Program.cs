@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic;
 using OscarIoT.Api.Data;
 
-var builder = WebApplication.CreateBuilder(args); 
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers(); // This line adds support for controllers to the application. Controllers are responsible for handling incoming HTTP requests, processing them, and returning appropriate HTTP responses. By calling AddControllers(), we are registering the necessary services and middleware to enable the use of controllers in our application.// This line adds services for API endpoint exploration. It enables the generation of metadata about the API endpoints, which can be used by tools like Swagger to create interactive documentation for the API. By calling AddEndpointsApiExplorer(), we are registering the necessary services to allow for the discovery and documentation of the API endpoints defined in our controllers.
 
@@ -29,23 +29,22 @@ builder.Services.AddCors(options =>
     );
 });
 
-var app = builder.Build(); 
+var app = builder.Build();
 
-if (app.Environment.IsDevelopment()) 
+app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+
+// Serve static files (dashboard) before other middleware
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseAuthorization();
-
-app.UseCors("AllowAll");
-
-app.UseDefaultFiles();
-
-app.UseStaticFiles();
-
 app.MapControllers();
 
 app.Run(); // This line starts the web application and begins listening for incoming HTTP requests. The Run() method is a blocking call that keeps the application running until it is shut down. It sets up the necessary infrastructure to handle requests, route them to the appropriate controllers, and send responses back to the clients.
