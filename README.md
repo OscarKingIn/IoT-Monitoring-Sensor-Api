@@ -73,6 +73,7 @@ GET /api/v1/sensorreadings
 Returns all sensor readings ordered by timestamp (most recent first).
 
 **Response**: HTTP 200 OK
+
 ```json
 [
   {
@@ -96,6 +97,7 @@ GET /api/v1/sensorreadings/{id}
 Returns a specific sensor reading by its unique identifier.
 
 **Parameters**:
+
 - `id` (integer, required) - The sensor reading ID
 
 **Response**: HTTP 200 OK or 404 Not Found
@@ -109,6 +111,7 @@ GET /api/v1/sensorreadings/sensor/{sensorId}
 Returns all readings for a specific sensor.
 
 **Parameters**:
+
 - `sensorId` (string, required) - The sensor's unique identifier
 
 **Response**: HTTP 200 OK
@@ -122,6 +125,7 @@ POST /api/v1/sensorreadings
 Creates a new sensor reading.
 
 **Request Body**:
+
 ```json
 {
   "sensorId": "SENSOR-001",
@@ -143,9 +147,11 @@ PUT /api/v1/sensorreadings/{id}
 Updates an existing sensor reading.
 
 **Parameters**:
+
 - `id` (integer, required) - The sensor reading ID
 
 **Request Body**:
+
 ```json
 {
   "sensorId": "SENSOR-001",
@@ -167,6 +173,7 @@ DELETE /api/v1/sensorreadings/{id}
 Deletes a sensor reading.
 
 **Parameters**:
+
 - `id` (integer, required) - The sensor reading ID
 
 **Response**: HTTP 204 No Content or 404 Not Found
@@ -235,6 +242,7 @@ dotnet test
 ```
 
 Test coverage includes:
+
 - Sensor reading retrieval operations
 - Data validation
 - Database context operations
