@@ -31,7 +31,20 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-app.UseHttpsRedirection();
+// Configure port binding for Azure App Service (Linux)
+// Azure passes PORT environment variable; default to 8080 if not set
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+
+app.Urls.Add($"http://0.0.0.0:{port}");
+
+app.MapGet("/", () => "API is running");
+
+// Only use HTTPS redirection in Development with proper certificate configuration
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors("AllowAll");
 
 // Serve static files (dashboard) before other middleware
@@ -47,5 +60,5 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 app.MapControllers();
 
-app.Run(); // This line starts the web application and begins listening for incoming HTTP requests. The Run() method is a blocking call that keeps the application running until it is shut down. It sets up the necessary infrastructure to handle requests, route them to the appropriate controllers, and send responses back to the clients.
+app.Run($"http://0.0.0.0:{port}"); // This line starts the web application and begins listening for incoming HTTP requests. The Run() method is a blocking call that keeps the application running until it is shut down. It sets up the necessary infrastructure to handle requests, route them to the appropriate controllers, and send responses back to the clients.
 
