@@ -211,7 +211,7 @@
 
 <script>
 
-    const API = '/api/v1/sensorReadings'; // relative URL — works on localhost AND Azure
+    const API = '/api/v1/SensorReadings'; // relative URL — works on localhost AND Azure
 
     const THRESH = {
         'WTR-BNE-001':{ warn:70, alert:78 },
@@ -305,7 +305,7 @@
             document.getElementById('apiTxt').textContent=ok?'API: LIVE':'API: OFFLINE';
             const h=document.getElementById('hdrStatus');
             h.style.color=ok?'var(--green)':'var(--red)';
-            h.textContent=ok?'● CONNECTED — ASP.NET Core + SQL Server':'● OFFLINE — run: docker-compose up';
+            h.textContent=ok?'● CONNECTED — ASP.NET Core + SQL Server':'● API NOT REACHABLE';
         }
 
 // ── LOG ──────────────────────────────────────────────────────────────────────

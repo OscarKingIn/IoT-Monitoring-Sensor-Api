@@ -31,34 +31,26 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure port binding for Azure App Service (Linux)
-// Azure passes PORT environment variable; default to 8080 if not set
+// Azure port binding
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-
 app.Urls.Add($"http://0.0.0.0:{port}");
-
-app.MapGet("/", () => "API is running");
-
-// Only use HTTPS redirection in Development with proper certificate configuration
-if (app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
 
 app.UseCors("AllowAll");
 
-// Serve static files (dashboard) before other middleware
+// Serve dashboard FIRST
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-if (app.Environment.IsDevelopment())
+//  Enable Swagger ALWAYS
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Oscar IoT API v1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseAuthorization();
+
 app.MapControllers();
 
-app.Run($"http://0.0.0.0:{port}"); // This line starts the web application and begins listening for incoming HTTP requests. The Run() method is a blocking call that keeps the application running until it is shut down. It sets up the necessary infrastructure to handle requests, route them to the appropriate controllers, and send responses back to the clients.
-
+app.Run();
